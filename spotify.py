@@ -6,13 +6,16 @@ from dotenv import load_dotenv
 import json
 import errno
 
+# to install librairies :
+
+# pip install -r requirements.txt
+
 load_dotenv()
 GENIUS_CLIENT_ID = os.getenv('GENIUS_CLIENT_TOKEN')
 
 auth_manager = SpotifyClientCredentials()
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
-# pip install -r requirements.txt
 
 def load_data(filename):
     try:
