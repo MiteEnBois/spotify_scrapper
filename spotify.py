@@ -10,6 +10,8 @@ import errno
 
 # pip install -r requirements.txt
 
+# also need to replace whats in the example.env and renaming it to just ".env"
+
 load_dotenv()
 GENIUS_CLIENT_ID = os.getenv('GENIUS_CLIENT_TOKEN')
 
@@ -86,7 +88,7 @@ def update_data(data, pl, jsfile):
         json.dump(data, outfile)
 
 
-file = "experience_sociales.json"
+file = "experience_sociale.json"
 
 playlistdict = load_data(file)
 update_data(playlistdict, "https://open.spotify.com/playlist/7a32HegwUvzeauTv3wLBjj", file)
