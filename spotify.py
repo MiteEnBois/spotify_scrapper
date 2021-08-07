@@ -57,11 +57,14 @@ def update_data(data, pl, jsfile):
         playlists = sp.next(playlists)
         tracks.extend(playlists['items'])
 
-    max = len(tracks)
+    max = len(tracks) - len(data["tracks"]) - 1
+    print(f'Old data : {len(data["tracks"])}\nNew data : {len(tracks)-1}')
     i = 1
+    changed = False
     for x in tracks:
         if x["track"]["id"] in data["tracks"]:
             continue
+        changed = True
         u = sp.user(x["added_by"]["id"])
         print(f'{u["display_name"]} : {x["track"]["name"]} {i}/{max}')
         data["users"][x["added_by"]["id"]] = u
@@ -83,12 +86,81 @@ def update_data(data, pl, jsfile):
         data["tracks"][x["track"]["id"]] = x
 
         i += 1
-    with open(jsfile, 'w+', encoding='utf-8') as outfile:
+    if changed:
+        with open(jsfile, 'w+', encoding='utf-8') as outfile:
+            outfile.truncate(0)
+            json.dump(data, outfile)
+
+
+def printtoexcel(data):
+    headers = []
+    content = []
+    for trackid, trackdata in data["tracks"].items():
+        line = ""
+        for k, v in trackdata.items():
+            if k not in ["track", "geniusdata", "added_by", "video_thumbnail", "is_local", "available_markets"]:
+                if k not in headers:
+                    headers.append(k)
+                line += f"{v};"
+        if "added_by" not in headers:
+            headers.append("added_by")
+        u = data["users"][trackdata["added_by"]["id"]]["display_name"]
+        line += f"{u};"
+        for k, v in trackdata["track"].items():
+            if k not in ["album", "artists", "external_ids", "external_urls", "is_local", "available_markets"]:
+                if "track-" + k not in headers:
+                    headers.append("track-" + k)
+                line += f"{v};"
+        if "album_id" not in headers:
+            headers.append("album_id")
+        u = trackdata["track"]["album"]["id"]
+        line += f"{u};"
+        if "album_name" not in headers:
+            headers.append("album_name")
+        u = data["albums"][trackdata["track"]["album"]["id"]]["name"]
+        line += f"{u};"
+        if "artist_name" not in headers:
+            headers.append("artist_name")
+        txt = ""
+        for a in trackdata["track"]["artists"]:
+            txt += f'{data["artists"][a["id"]]["name"]}, '
+        line += f"{txt[:-2]};"
+
+        if "artist_genres" not in headers:
+            headers.append("artist_genres")
+        txt = ""
+        for a in trackdata["track"]["artists"]:
+            if data["artists"][a["id"]]["genres"] == []:
+                txt += f'No data,'
+            for g in data["artists"][a["id"]]["genres"]:
+                txt += f'{g},'
+            txt = txt[:-1] + "/"
+        line += f"{txt[:-1]};"
+
+        if trackdata["geniusdata"] is not None:
+            for k, v in trackdata["geniusdata"]["result"].items():
+                if isinstance(v, dict):
+                    continue
+                if "genius-" + k not in headers:
+                    headers.append("genius-" + k)
+                if isinstance(v, list):
+                    txt = ""
+                    for a in v:
+                        txt += f'{a},'
+                    line += f"{txt[:-1]};"
+                else:
+                    line += f"{v};"
+
+        content.append(line)
+    with open("output.csv", "w+", encoding='utf-8') as outfile:
         outfile.truncate(0)
-        json.dump(data, outfile)
+        outfile.write(";".join(headers) + "\n")
+        for l in content:
+            outfile.write(f"{l}\n")
 
 
 file = "experience_sociale.json"
 
 playlistdict = load_data(file)
 update_data(playlistdict, "https://open.spotify.com/playlist/7a32HegwUvzeauTv3wLBjj", file)
+printtoexcel(playlistdict)
