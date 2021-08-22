@@ -57,11 +57,13 @@ def update_data(data, pl, jsfile):
         playlists = sp.next(playlists)
         tracks.extend(playlists['items'])
 
-    max = len(tracks) - len(data["tracks"]) - 1
-    print(f'Old data : {len(data["tracks"])}\nNew data : {len(tracks)-1}')
+    max = len(tracks) - len(data["tracks"])
+    print(f'Old data : {len(data["tracks"])}\nNew data : {len(tracks)}')
     i = 1
+    tid = []
     changed = False
     for x in tracks:
+        tid.append(x["track"]["id"])
         if x["track"]["id"] in data["tracks"]:
             continue
         changed = True
@@ -86,6 +88,14 @@ def update_data(data, pl, jsfile):
         data["tracks"][x["track"]["id"]] = x
 
         i += 1
+
+    for x, v in data["tracks"].copy().items():
+        if x not in tid:
+            changed = True
+            print(f"removed {v['track']['name']}")
+            data["tracks"].pop(x)
+            # del data["tracks"][x]
+
     if changed:
         with open(jsfile, 'w+', encoding='utf-8') as outfile:
             outfile.truncate(0)
